@@ -276,16 +276,20 @@ class Worker(MainLoopApplication):
     def getOpenglVersion(self):
         import subprocess
         import re
-        p = subprocess.Popen("glxinfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output, errors = p.communicate()
-        outputList = output.split("\n")
-        for line in outputList:
-            if "OpenGL version string" in line:
-                LOGGER.info("found : %s" % line)
-                oglpattern = re.compile("(\d.\d.\d)")
-                res = oglpattern.search(line)
-                self.openglversion = res.group()
-                break
+        try:
+            p = subprocess.Popen("glxinfo", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            output, errors = p.communicate()
+            outputList = output.split("\n")
+            for line in outputList:
+                if "OpenGL version string" in line:
+                    LOGGER.info("found : %s" % line)
+                    oglpattern = re.compile("(\d.\d.\d)")
+                    res = oglpattern.search(line)
+                    self.openglversion = res.group()
+                    break
+        except OSError:
+            LOGGER.warning("No glxinfo present")
+            self.openglversion = 0
 
     def updateSysInfos(self, ticket):
         self.updateSys = True
