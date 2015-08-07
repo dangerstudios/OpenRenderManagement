@@ -72,6 +72,9 @@ class RenderNodeResource(DispatcherBaseResource):
 
         dct = self.getBodyAsJSON()
 
+        x_real_ip = self.request.headers.get("X-Real-IP") #If nodes are behind a proxy
+        remote_ip = self.request.remote_ip if not x_real_ip else x_real_ip
+
         if computerName in self.getDispatchTree().renderNodes:
             # When the registering worker is already listed in RN list
             logger.warning("RenderNode already registered: %s" % computerName)
@@ -88,6 +91,11 @@ class RenderNodeResource(DispatcherBaseResource):
             if 'status' in dct:
                 existingRN.status = int(dct['status'])
 
+            if existingRN.host != remote_ip:
+                existingRN.host = remote_ip
+                logger.warning("RenderNode re-registered with different ip.")
+                self.getDispatchTree().toModifyElements.append(existingRN)
+
             return HttpResponse(304, "RenderNode already registered.")
 
         else:
@@ -95,8 +103,6 @@ class RenderNodeResource(DispatcherBaseResource):
             for key in ('name', 'port', 'status', 'cores', 'speed', 'ram', 'pools', 'caracteristics'):
                 if not key in dct:
                     return Http400("Missing key %r" % key, content="Missing key %r" % key)
-            x_real_ip = self.request.headers.get("X-Real-IP") #If nodes are behind a proxy
-            ip = self.request.remote_ip if not x_real_ip else x_real_ip
             port = int(dct['port'])
             status = int(dct['status'])
             if status not in (RN_UNKNOWN, RN_PAUSED, RN_IDLE, RN_BOOTING):
@@ -112,7 +118,7 @@ class RenderNodeResource(DispatcherBaseResource):
             puliversion = dct.get('puliversion', "unknown")
             createDate = dct.get('createDate', time.time())
 
-            renderNode = RenderNode(None, computerName, cores, speed, ip, port, ram, caracteristics, puliversion=puliversion, createDate=createDate)
+            renderNode = RenderNode(None, computerName, cores, speed, remote_ip, port, ram, caracteristics, puliversion=puliversion, createDate=createDate)
 
             renderNode.status = status
             poolList = []

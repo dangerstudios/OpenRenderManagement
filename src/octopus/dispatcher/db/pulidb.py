@@ -508,7 +508,8 @@ class PuliDB(object):
                               # RenderNodes.q.coresNumber.fieldName: element.coresNumber,
                               # RenderNodes.q.ramSize.fieldName: element.ramSize}
                               # RenderNodes.q.caracteristics.fieldName: json.dumps(element.caracteristics),
-                    fields = {RenderNodes.q.performance.fieldName: element.performance}
+                    fields = {RenderNodes.q.performance.fieldName: element.performance,
+                              RenderNodes.q.ip.fieldName: element.host}
                     conn.query(conn.sqlrepr(Update(RenderNodes.q, values=fields, where=(RenderNodes.q.id == element.id))))
                     conn.cache.clear()
 
