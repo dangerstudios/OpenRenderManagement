@@ -7,12 +7,19 @@ Created on Apr 27, 2012
 from octopus.core.framework import ResourceNotFoundError
 from octopus.dispatcher.webservice import DispatcherBaseResource
 from octopus.core.communication.http import Http404, Http500
-
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 class LicensesResource(DispatcherBaseResource):
     #@queue
     def get(self):
-        self.writeCallback(repr(self.dispatcher.licenseManager))
+        lic_data = {}
+        for name, lic in self.dispatcher.licenseManager.licenses.iteritems():
+            lic_data[name] = {"max": lic.maximum, "used": lic.used, "rns":
+                [rn.name for rn in sorted(lic.currentUsingRenderNodes)]}
+        self.writeCallback(json.dumps(lic_data))
 
 
 class LicenseResource(DispatcherBaseResource):
@@ -20,11 +27,9 @@ class LicenseResource(DispatcherBaseResource):
     def get(self, licenseName):
         try:
             lic = self.dispatcher.licenseManager.licenses[licenseName]
-            licenseRepr = "{'max':%s, 'used':%s, 'rns':[" % (str(lic.maximum), str(lic.used))
-            for rn in sorted(lic.currentUsingRenderNodes):
-                licenseRepr += "\"%s\"," % rn.name
-            licenseRepr += "]}"
-            self.writeCallback(licenseRepr)
+            lic_data = {"max": lic.maximum, "used": lic.used, "rns":
+                [rn.name for rn in sorted(lic.currentUsingRenderNodes)]}
+            self.writeCallback(json.dumps(lic_data))
         except KeyError:
             raise ResourceNotFoundError
 
